@@ -23,7 +23,7 @@ public class BaseballService : IBaseballService
     {
         try
         {
-            string url = teamId.HasValue ? $"{_baseUrl}/teams/{teamId}" : $"{_baseUrl}/teams";
+            string url = teamId.HasValue ? $"{_baseUrl}teams/{teamId}" : $"{_baseUrl}teams";
 
             var response = await _httpClient.GetAsync(url);
 
@@ -37,7 +37,7 @@ public class BaseballService : IBaseballService
 
                     var team = new Team
                     {
-                        ApiId = singleTeamResponse.Data.ApiId,
+                        ApiId = singleTeamResponse.Data.Id,
                         Slug = singleTeamResponse.Data.Slug,
                         Abbreviation = singleTeamResponse.Data.Abbreviation,
                         Name = singleTeamResponse.Data.Name,
@@ -57,7 +57,7 @@ public class BaseballService : IBaseballService
                     // Map API response to your Team model list
                     var teams = teamsResponse.Data.Select(apiTeam => new Team
                     {
-                        ApiId = apiTeam.ApiId,
+                        ApiId = apiTeam.Id,
                         Abbreviation = apiTeam.Abbreviation,
                         Slug = apiTeam.Slug,
                         Location = apiTeam.Location,
@@ -78,6 +78,64 @@ public class BaseballService : IBaseballService
         {
             Console.WriteLine($"Error fetching teams from Balldontlie: {ex.Message}");
             return new List<Team>();
+        }
+    }
+
+    public async Task<List<Player>> GetPlayersByTeam(int teamId)
+    {
+        try
+        {
+            var url = $"{_baseUrl}players?team_ids[]={teamId}&per_page=100";
+
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string content = await response.Content.ReadAsStringAsync();
+
+                var playersResponse = JsonSerializer.Deserialize<PlayersResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var players = playersResponse.Data.Select(apiPlayer => new Player
+                {
+                    ApiId = apiPlayer.Id,
+                    FirstName = apiPlayer.FirstName,
+                    LastName = apiPlayer.LastName,
+                    FullName = apiPlayer.FullName,
+                    DebutYear = apiPlayer.DebutYear,
+                    Jersey = apiPlayer.Jersey,
+                    College = apiPlayer.College,
+                    Position = apiPlayer.Position,
+                    IsActive = apiPlayer.Active,
+                    BirthPlace = apiPlayer.BirthPlace,
+                    DateOfBirth = apiPlayer.Dob,
+                    Age = apiPlayer.Age,
+                    Height = apiPlayer.Height,
+                    Weight = apiPlayer.Weight,
+                    Draft = apiPlayer.Draft,
+                    BatThrows = apiPlayer.BatThrows,
+                    Team = new Team
+                    {
+                        ApiId = apiPlayer.Team.Id,
+                        Abbreviation = apiPlayer.Team.Abbreviation,
+                        Slug = apiPlayer.Team.Slug,
+                        Location = apiPlayer.Team.Location,
+                        Name = apiPlayer.Team.Name,
+                        DisplayName = apiPlayer.Team.DisplayName,
+                        ShortDisplayName = apiPlayer.Team.ShortDisplayName,
+                        League = apiPlayer.Team.League,
+                        Division = apiPlayer.Team.Division
+                    },
+                }).ToList();
+
+                return players;
+            }
+
+            return new List<Player>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching players from Balldontlie: {ex.Message}");
+            return new List<Player>();
         }
     }
 }

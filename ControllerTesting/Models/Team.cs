@@ -17,7 +17,7 @@ public class Team
 
 public class ApiTeam
 {
-    public int ApiId { get; set; }
+    public int Id { get; set; }
     public string Slug { get; set; }
     public string Abbreviation { get; set; }
 
